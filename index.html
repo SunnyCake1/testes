@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Painel Lab Óptico - Performance e Feedback</title>
+    <style>
+        body {
+            margin: 0; padding: 0; height: 100vh; display: flex;
+            font-family: 'Segoe UI', Arial, sans-serif; overflow: hidden;
+            background-color: #000;
+        }
+
+        /* ÁREA DAS CORES (ESQUERDA) */
+        #main-area { 
+            flex: 1; display: flex; flex-direction: column; 
+            justify-content: flex-start; align-items: center; text-align: center;
+            transition: background 1s ease; padding-top: 20px;
+        }
+
+        /* NOVA CAIXA DE ELOGIOS (TOPO) */
+        #caixa-elogios {
+            width: 90%; background: rgba(255, 255, 255, 0.9);
+            border: 5px solid #000; border-radius: 15px;
+            padding: 15px; margin-bottom: 20px; min-height: 80px;
+            display: flex; flex-direction: column; justify-content: center;
+            box-shadow: 0px 5px 15px rgba(0,0,0,0.2);
+        }
+        #titulo-elogio { font-size: 1vw; font-weight: 900; color: #d32f2f; text-transform: uppercase; margin-bottom: 5px; }
+        #texto-elogio { font-size: 1.8vw; font-weight: 800; color: #000; font-style: italic; transition: opacity 0.5s; }
+
+        #relogio { 
+            font-size: 2.5vw; font-weight: 800; 
+            background: rgba(255,255,255,0.9); padding: 5px 40px; 
+            border-radius: 50px; border: 4px solid #000; margin-bottom: 15px; 
+        }
+
+        #nome-rota { font-size: 7vw; font-weight: 900; text-transform: uppercase; line-height: 0.9; margin-bottom: 15px; }
+
+        #container-countdown { 
+            background: rgba(255,255,255,0.8); padding: 10px 30px; 
+            border-radius: 25px; border: 5px solid #000;
+        }
+        #timer-countdown { font-size: 5.5vw; font-weight: 900; font-family: 'Courier New', monospace; color: #000; }
+
+        /* ANIMAÇÕES */
+        .timer-alerta { color: #ff0000 !important; animation: piscar-anim 0.8s infinite; }
+        .item-urgente { color: #ff0000 !important; animation: piscar-anim 0.6s infinite; font-weight: 900; }
+        @keyframes piscar-anim { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+
+        #container-proxima {
+            margin-top: 20px; border: 4px solid #000; padding: 10px 30px; 
+            background: #fff; border-radius: 15px; font-weight: 900;
+        }
+
+        /* SIDEBAR (DIREITA) */
+        #sidebar { 
+            width: 32%; background: #ffffff; display: flex; 
+            flex-direction: column; padding: 12px 20px; border-left: 12px solid #000; 
+            box-sizing: border-box; gap: 6px; /* Reduzido de 10px para 6px para ganhar espaço vertical */
+        }
+        .secao-titulo { font-size: 1vw; font-weight: 900; border-bottom: 3px solid #000; text-align: center; text-transform: uppercase; background: #f0f0f0; padding: 2px 0; }
+        
+        .tabela-horarios { width: 100%; border-collapse: collapse; font-size: 0.8vw; }
+        .tabela-horarios td { padding: 3px; border-bottom: 1px solid #ddd; font-weight: bold; }
+        
+        .tabela-prazos { width: 100%; border-collapse: collapse; font-size: 0.75vw; }
+        .tabela-prazos td { padding: 2px 4px; border-bottom: 1px solid #ddd; font-weight: bold; line-height: 1.1; }
+        .tabela-prazos td:first-child { width: 40%; } /* Garante que os nomes das rotas fiquem alinhados */
+        
+        /* Quadrados de cor um pouco menores */
+        .cor-box { width: 14px; height: 14px; border: 2px solid #000; display: inline-block; vertical-align: middle; margin-right: 6px; border-radius: 3px; }
+
+        /* Quadro de comunicados com altura mínima para nunca mais sumir */
+        #quadro-comunicados { background: #ffeb3b; border: 4px solid #000; padding: 8px; border-radius: 10px; flex-grow: 1; overflow-y: auto; min-height: 70px; }
+        .comunicado-item { font-size: 1.1vw; font-weight: 800; margin-bottom: 6px; border-bottom: 1px solid rgba(0,0,0,0.1); }
+
+        .card-log { background: #eee; padding: 4px 8px; border: 2px solid #000; border-radius: 6px; opacity: 0.3; font-size: 0.85vw; }
+        .card-log.ativo { opacity: 1; background: #fff; }
+
+        #btn-editar { position: fixed; bottom: 15px; right: 15px; background: #000; color: #fff; padding: 8px 12px; border-radius: 50px; text-decoration: none; font-weight: bold; font-size: 11px; z-index: 1000; }
+    </style>
+</head>
+<body>
+
+    <div id="main-area">
+        <div id="caixa-elogios">
+            <div id="titulo-elogio">🌟 FEEDBACK DA SEMANA:</div>
+            <div id="texto-elogio">Carregando elogios dos nossos clientes...</div>
+        </div>
+
+        <div id="relogio">00:00:00</div>
+        <div id="nome-rota">CARREGANDO...</div>
+        
+        <div id="container-countdown">
+            <div style="font-size: 1vw; font-weight: 900;">FECHAMENTO EM:</div>
+            <div id="timer-countdown">00:00:00</div>
+        </div>
+
+        <div id="container-proxima">
+            <div style="font-size: 0.8vw;">PRÓXIMA SAÍDA:</div>
+            <div id="nome-proxima" style="font-size: 1.8vw; text-transform: uppercase;">---</div>
+        </div>
+    </div>
+
+    <div id="sidebar">
+        <div class="secao-titulo">Grade de Horários</div>
+        <table class="tabela-horarios">
+            <tr><td><div class="cor-box" style="background:#FF7F50"></div>CORAL/LILÁS</td><td>16:15-09:00</td></tr>
+            <tr><td><div class="cor-box" style="background:#FFD700"></div>AMARELO</td><td>09:00-10:00</td></tr>
+            <tr><td><div class="cor-box" style="background:#F5F5DC"></div>BEGE/LILÁS</td><td>10:00-14:00</td></tr>
+            <tr><td><div class="cor-box" style="background:#FF69B4"></div>ROSA/AMARELO</td><td>14:00-16:15</td></tr>
+        </table>
+
+	<div class="secao-titulo">Prazos de Entrega</div>
+        <table class="tabela-prazos">
+            <tr>
+                <td><div class="cor-box" style="background:#FF69B4"></div>ROSA</td>
+                <td>Dia seguinte (Seg a Sex)</td>
+            </tr>
+            <tr>
+                <td><div class="cor-box" style="background:#FFD700"></div>AMARELO</td>
+                <td>1º Corte: Tarde<br>2º Corte: Manhã seg. (Seg a Sex)</td>
+            </tr>
+            <tr>
+                <td><div class="cor-box" style="background:#FF7F50"></div>CORAL</td>
+                <td>Pela manhã (Seg a Sáb)</td>
+            </tr>
+            <tr>
+                <td><div class="cor-box" style="background:#F5F5DC"></div>BEGE</td>
+                <td>Pela tarde (Seg a Sex)</td>
+            </tr>
+            <tr>
+                <td><div class="cor-box" style="background:#DCD0FF"></div>LILÁS</td>
+                <td>Mesmo dia (Seg a Sáb)</td>
+            </tr>
+            <tr>
+                <td><div class="cor-box" style="background:#32CD32"></div>LIMA</td>
+                <td>1 a 6 dias úteis</td>
+            </tr>
+            <tr>
+                <td><div class="cor-box" style="background:#C0C0C0"></div>PRATA</td>
+                <td>1 a 2 dias úteis</td>
+            </tr>
+            <tr>
+                <td><div class="cor-box" style="background:#FFFFFF"></div>BALCÃO</td>
+                <td>Cliente vem buscar</td>
+            </tr>
+        </table>
+
+        <div class="secao-titulo">Comunicados</div>
+        <div id="quadro-comunicados"><div id="lista-comunicados"></div></div>
+
+        <div class="secao-titulo">Saídas Logísticas</div>
+        <div id="log-lima" class="card-log"><strong>LIMA</strong> - Correio até 09:00</div>
+        <div id="log-prata" class="card-log"><strong>PRATA</strong> - Própria até 10:30</div>
+        <div class="card-log ativo" style="border-left: 8px solid #000;"><strong>BALCÃO</strong> - Retirada Local</div>
+    </div>
+
+    <a href="https://docs.google.com/spreadsheets/d/1fbPK5jXOKwSYHcK9cZLslBT9lRLsMUQ-fBMlAB6cnNg/edit?gid=0#gid=0" target="_blank" id="btn-editar">✏️ EDITAR</a>
+
+    <script>
+        const LINK_CSV_COMUNICADOS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQu_1GxAEt7dDwb6AuM-P8szawwCQUNYvXZaaCGeoJ4UD8y3-O-4ZvSBKYWnyj4nsnqzvCZfKs5EQRh/pub?gid=0&single=true&output=csv";
+        const LINK_CSV_ELOGIOS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQu_1GxAEt7dDwb6AuM-P8szawwCQUNYvXZaaCGeoJ4UD8y3-O-4ZvSBKYWnyj4nsnqzvCZfKs5EQRh/pub?gid=1234763483&single=true&output=csv"; // Crie um CSV apenas para os elogios
+
+        const rotas = [
+            { nome: "CORAL / LILÁS", c1: "#FF7F50", c2: "#DCD0FF", inicio: "16:15:01", fim: "09:00:00" },
+            { nome: "AMARELO", c1: "#FFD700", c2: "#FFD700", inicio: "09:00:01", fim: "10:00:00" },
+            { nome: "BEGE / LILÁS", c1: "#F5F5DC", c2: "#DCD0FF", inicio: "10:00:01", fim: "14:00:00" },
+            { nome: "ROSA / AMARELO", c1: "#FF69B4", c2: "#FFD700", inicio: "14:00:01", fim: "16:15:00" }
+        ];
+
+        let listaElogios = ["Aguardando feedbacks..."];
+        let indiceElogio = 0;
+
+        async function buscarDados() {
+            // BUSCAR COMUNICADOS
+            try {
+                const resC = await fetch(LINK_CSV_COMUNICADOS + "&t=" + Math.random());
+                const dataC = await resC.text();
+                const rowsC = dataC.split('\n');
+                const listC = document.getElementById('lista-comunicados');
+                listC.innerHTML = "";
+                for (let i = 1; i < rowsC.length; i++) {
+                    let txt = rowsC[i].trim().replace(/^"(.*)"$/, '$1');
+                    if (txt.length > 2) {
+                        const div = document.createElement('div');
+                        div.className = "comunicado-item" + (txt.toUpperCase().includes("URGENTE") ? " item-urgente" : "");
+                        div.innerText = "• " + txt;
+                        listC.appendChild(div);
+                    }
+                }
+            } catch (e) {}
+
+            // BUSCAR ELOGIOS
+            try {
+                const resE = await fetch(LINK_CSV_ELOGIOS + "&t=" + Math.random());
+                const dataE = await resE.text();
+                const rowsE = dataE.split('\n');
+                let temporario = [];
+                for (let i = 1; i < rowsE.length; i++) {
+                    let txt = rowsE[i].trim().replace(/^"(.*)"$/, '$1');
+                    if (txt.length > 5) temporario.push(txt);
+                }
+                if(temporario.length > 0) listaElogios = temporario;
+            } catch (e) {}
+        }
+
+        function rodarSlidesElogios() {
+            const txtElem = document.getElementById('texto-elogio');
+            txtElem.style.opacity = 0;
+            setTimeout(() => {
+                txtElem.innerText = `"${listaElogios[indiceElogio]}"`;
+                txtElem.style.opacity = 1;
+                indiceElogio = (indiceElogio + 1) % listaElogios.length;
+            }, 500);
+        }
+
+        function atualizar() {
+            const agora = new Date();
+            const segAtual = (agora.getHours()*3600) + (agora.getMinutes()*60) + agora.getSeconds();
+            document.getElementById('relogio').innerText = agora.toLocaleTimeString('pt-BR');
+
+            rotas.forEach((r, i) => {
+                const sIni = conv(r.inicio), sFim = conv(r.fim);
+                const ativo = (sIni > sFim) ? (segAtual >= sIni || segAtual <= sFim) : (segAtual >= sIni && segAtual <= sFim);
+                if (ativo) {
+                    document.getElementById('main-area').style.background = `linear-gradient(to right, ${r.c1} 50%, ${r.c2} 50%)`;
+                    document.getElementById('nome-rota').innerText = r.nome;
+                    document.getElementById('nome-proxima').innerText = rotas[(i+1)%rotas.length].nome;
+                    let alvo = new Date(); alvo.setHours(Math.floor(sFim/3600), Math.floor((sFim%3600)/60), sFim%60, 0);
+                    if (alvo < agora) alvo.setDate(alvo.getDate() + 1);
+                    const diff = alvo - agora;
+                    const timer = document.getElementById('timer-countdown');
+                    if (diff > 0 && diff <= 900000) timer.classList.add('timer-alerta');
+                    else timer.classList.remove('timer-alerta');
+                    const h = Math.floor(diff/3600000), m = Math.floor((diff%3600000)/60000), s = Math.floor((diff%60000)/1000);
+                    timer.innerText = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+                }
+            });
+        }
+
+        function conv(hms) { const p = hms.split(':').map(Number); return (p[0]*3600)+(p[1]*60)+(p[2]||0); }
+
+        setInterval(atualizar, 1000);
+        setInterval(buscarDados, 60000); // Atualiza dados da planilha a cada 1 min
+        setInterval(rodarSlidesElogios, 12000); // Muda o elogio a cada 12 segundos
+        atualizar(); buscarDados(); rodarSlidesElogios();
+    </script>
+</body>
+</html>
+

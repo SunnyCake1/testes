@@ -229,7 +229,7 @@
             } catch (e) {
                 console.log("Erro ao carregar comunicados");
             }
-
+            
             // BUSCAR ELOGIOS
             try {
                 const resE = await fetch(LINK_CSV_ELOGIOS + "&t=" + Math.random());
@@ -237,12 +237,21 @@
                 const rowsE = dataE.split('\n');
                 let temporario = [];
                 for (let i = 1; i < rowsE.length; i++) {
-                    let txt = rowsE[i].trim().replace(/^"(.*)"$/, '$1');
+                    let txt = rowsE[i].trim();
+                    
+                    // 1. Limpa as vírgulas invisíveis que ficam no final da linha
+                    txt = txt.replace(/,+$/, ''); 
+                    
+                    // 2. Remove as aspas do Google Sheets (se existirem)
+                    txt = txt.replace(/^"(.*)"$/, '$1'); 
+                    
+                    // 3. Arruma aspas duplicadas ("") que o Sheets cria por engano
+                    txt = txt.replace(/""/g, '"');
+
                     if (txt.length > 5) temporario.push(txt);
                 }
                 if(temporario.length > 0) listaElogios = temporario;
             } catch (e) {}
-        }
 
         function rodarSlidesElogios() {
             const txtElem = document.getElementById('texto-elogio');
